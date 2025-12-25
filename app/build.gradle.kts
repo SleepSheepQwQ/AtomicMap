@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
 android {
     namespace = "com.atomic.map"
     compileSdk = 34
@@ -12,9 +13,18 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
-    buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.4" }
+    buildFeatures { 
+        compose = true
+        aidl = true 
+    }
+    composeOptions { 
+        kotlinCompilerExtensionVersion = "1.5.4" 
+    }
+    kotlinOptions { 
+        jvmTarget = "17" 
+    }
 }
+
 dependencies {
     implementation(project(":shared"))
     implementation("dev.rikka.shizuku:api:13.1.0")

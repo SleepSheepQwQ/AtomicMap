@@ -5,5 +5,10 @@ plugins {
 android {
     namespace = "com.atomic.map.shared"
     compileSdk = 34
-    buildFeatures { aidl = true }
+    buildFeatures { 
+        aidl = true 
+    }
+    kotlinOptions { 
+        jvmTarget = "17" 
+    }
 }
