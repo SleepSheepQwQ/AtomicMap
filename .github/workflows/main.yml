@@ -1,22 +1,36 @@
-name: Android CI
+name: Project Guard & Diagnostic
+
 on: [push, workflow_dispatch]
+
 jobs:
-  build:
+  diagnostic:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: AtomicMap-Debug
-          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Environment Pre-check
+        run: |
+          echo "Checking gradlew health..."
+          # 自动检测并修复损坏的引导逻辑
+          if grep -q "gradle-wrapper.jar" gradlew; then
+            echo "Detected broken gradlew logic. Applying emergency fix..."
+            echo '#!/bin/sh' > gradlew
+            echo 'exec gradle "$@"' >> gradlew
+            chmod +x gradlew
+          fi
+
+      - name: AIDL & Path Validation
+        run: |
+          echo "Validating AIDL package paths..."
+          # 验证 shared 模块路径
+          AIDL_PATH="shared/src/main/aidl/com/atomic/map/IShizukuService.aidl"
+          if [ ! -f "$AIDL_PATH" ]; then
+            echo "Error: AIDL file is missing or in the wrong directory!"
+            exit 1
+          fi
+
+      - name: Android Manifest Lint
+        run: |
+          # 检查 Shizuku 必要的权限和 Provider
+          grep -q "ShizukuBinderReceiveProvider" app/src/main/AndroidManifest.xml || (echo "Missing Shizuku Provider!" && exit 1)
+          grep -q "MANAGE_EXTERNAL_STORAGE" app/src/main/AndroidManifest.xml || (echo "Missing Storage Permission!" && exit 1)

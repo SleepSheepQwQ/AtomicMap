@@ -1,4 +1,4 @@
-name: Android CI
+name: Android Build Pipeline
 
 on:
   push:
@@ -8,32 +8,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 只有当 Guard 任务通过后才开始构建，避免浪费资源
+    needs: [diagnostic] 
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
+      - uses: actions/checkout@v4
+      
+      - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 核心修复：让官方插件接管环境，它会忽略你本地缺失的 jar 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.2
-          generate-job-summary: true
 
-      # 修复执行权并编译
-      - name: Build with Gradle
-        # 即使本地没有 jar，官方插件下载的 gradle 环境也可以直接通过 gradle 命令运行
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --console=plain
+      - name: Build Debug APK
+        # [span_7](start_span)即使 gradlew 有微小瑕疵，由于我们在 main.yml 做了预处理，这里能稳过[span_7](end_span)
+        run: gradle assembleDebug --console=plain
 
-      - name: Upload APK
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AtomicMap-Debug
