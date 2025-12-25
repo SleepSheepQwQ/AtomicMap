@@ -17,7 +17,7 @@ import dev.rikka.shizuku.ShizukuRemoteServiceArgs
 
 class MainActivity : ComponentActivity() {
     private var syncService: IShizukuService? = null
-    [span_10](start_span)[span_11](start_span)// 提取为成员变量，确保 onDestroy 可访问[span_10](end_span)[span_11](end_span)
+    // 修复点 1：定义为成员变量，全类可见
     private val userServiceComponent = ComponentName("com.atomic.map", "com.atomic.map.UserService")
 
     private val connection = object : ServiceConnection {
@@ -43,31 +43,28 @@ class MainActivity : ComponentActivity() {
             var isRunning by remember { mutableStateOf(false) }
             
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("AtomicMap High-Precision Sync", style = MaterialTheme.typography.headlineSmall)
+                Text("AtomicMap Sync", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
-                TextField(value = src, onValueChange = { src = it }, label = { Text("Source Path") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = src, onValueChange = { src = it }, label = { Text("源路径") }, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(8.dp))
-                TextField(value = dst, onValueChange = { dst = it }, label = { Text("Target Path") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = dst, onValueChange = { dst = it }, label = { Text("目标路径") }, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
                         if (syncService == null) {
                             bindShizukuService()
-                            Toast.makeText(this@MainActivity, "Binding Shizuku...", Toast.LENGTH_SHORT).show()
                         } else {
                             isRunning = true
                             Thread {
-                                [span_12](start_span)// 原子同步调用逻辑[span_12](end_span)
-                                val success = try { syncService?.runAtomicSync(src, dst, emptyList()) ?: false } catch (e: Exception) { false }
+                                try { syncService?.runAtomicSync(src, dst, emptyList()) } catch (e: Exception) {}
                                 isRunning = false
-                                runOnUiThread { Toast.makeText(this@MainActivity, if(success) "Sync Complete" else "Sync Failed", Toast.LENGTH_LONG).show() }
                             }.start()
                         }
                     }, 
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isRunning
                 ) {
-                    Text(if (isRunning) "Syncing..." else "Execute Atomic Mapping")
+                    Text(if (isRunning) "同步中..." else "开始同步")
                 }
             }
         }
@@ -76,9 +73,7 @@ class MainActivity : ComponentActivity() {
     private fun bindShizukuService() {
         if (Shizuku.pingBinder()) {
             val args = ShizukuRemoteServiceArgs(userServiceComponent)
-                .daemon(false)
-                .processNameSuffix("service")
-                .debuggable(true)
+                .daemon(false).processNameSuffix("service").debuggable(true)
             Shizuku.bindUserService(args, connection)
         }
     }
@@ -88,7 +83,7 @@ class MainActivity : ComponentActivity() {
         Shizuku.removeBinderReceivedListener(binderListener)
         if (Shizuku.pingBinder()) {
             try { 
-                [span_13](start_span)// 修复：使用成员变量重新构建解绑参数[span_13](end_span)
+                // 修复点 2：使用成员变量重新创建 args，确保解绑逻辑闭环
                 val args = ShizukuRemoteServiceArgs(userServiceComponent)
                 Shizuku.unbindUserService(args, connection, true) 
             } catch (e: Exception) {}

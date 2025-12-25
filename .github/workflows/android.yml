@@ -15,26 +15,23 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 先锋行动：直接干掉本地那个自杀式的 gradlew，重建引导逻辑
       - name: 战前自愈 (Repair gradlew)
+        # 这一步直接解决 sh 无法运行 .jar 的问题，强制使用系统环境
         run: |
-          echo "检测到损坏的 gradlew，正在强制重塑..."
           echo '#!/bin/sh' > gradlew
           echo 'exec gradle "$@"' >> gradlew
           chmod +x gradlew
 
-      # 托管模式：它会自动匹配 gradle-wrapper.properties 里的 8.2 版本
-      - name: Setup Gradle
+      - name: 官方 Gradle 托管
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.2
 
       - name: 执行生产编译
-        # 即使本地没有 .jar 文件，由于我们重写了 gradlew 且用了 setup-gradle，这里必过
-        run: ./gradlew assembleDebug --console=plain
+        run: ./gradlew assembleDebug --console=plain --stacktrace
 
-      - name: 产出 APK
+      - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: AtomicMap-Official-Debug
+          name: AtomicMap-Release-APK
           path: app/build/outputs/apk/debug/*.apk
