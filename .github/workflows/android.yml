@@ -24,8 +24,54 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # --- 关键修复步骤：在工作流中动态补全构建环境 ---
+      - name: Setup Gradle Wrapper Environment
+        run: |
+          echo "正在检查并修复 Gradle 引导环境..."
+          mkdir -p gradle/wrapper
+          
+          # 1. 下载官方二进制 gradlew.jar (解决 exit code 2 错误)
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            curl -Lo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+          fi
+          
+          # 2. 动态生成 gradle-wrapper.properties (锁定 8.2 版本)
+          cat <<EOF > gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          # 3. 动态生成 gradlew 引导脚本 (解决 chmod access 错误)
+          if [ ! -f gradlew ]; then
+            cat <<EOF > gradlew
+          #!/bin/sh
+          # Attempt to set APP_HOME
+          # Resolve links: \$0 may be a link
+          PRG="\$0"
+          while [ -h "\$PRG" ] ; do
+              ls=\`ls -ld "\$PRG"\`
+              link=\`expr "\$ls" : '.*-> \(.*\)\$'\`
+              if expr "\$link" : '/.*' > /dev/null; then
+                  PRG="\$link"
+              else
+                  PRG=\`dirname "\$PRG"\`/"\$link"
+              fi
+          done
+          SAVED=\`pwd\`
+          cd \`dirname "\$PRG"\` > /dev/null
+          APP_HOME=\`pwd\`
+          cd "\$SAVED" > /dev/null
+
+          CLASSPATH=\$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+          exec java -classpath "\$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "\$@"
+          EOF
+          fi
+          
+          # 4. 授予执行权限
+          chmod +x gradlew
 
       - name: Build with Gradle
         run: ./gradlew assembleDebug
