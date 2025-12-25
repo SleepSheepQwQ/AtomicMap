@@ -1,24 +1,34 @@
-name: Project Guard
+name: Project Guard (证据记录仪)
 
 on: [push, workflow_dispatch]
 
 jobs:
-  check:
+  diagnostic:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: 检查配置逻辑
+
+      - name: 仓库定义核查 (带源码审计)
         run: |
-          # 确保根目录有仓库定义，否则直接拦截
-          grep -q "google()" build.gradle.kts || (echo "错误：缺少仓库定义" && exit 1)
+          echo "==== 云端 settings.gradle.kts 实时内容如下 ===="
+          cat settings.gradle.kts
+          echo "=============================================="
           
-      - name: 检查 MainActivity 语法死穴
+          if grep -q "google()" settings.gradle.kts; then
+            echo "✅ 审计通过：仓库定义确实存在。"
+          else
+            echo "❌ 证据确凿：settings.gradle.kts 确实缺少 google()！"
+            echo "请检查你是否提交到了正确的分支，或文件是否在根目录。"
+            exit 1
+          fi
+
+      - name: MainActivity 变量核查
         run: |
-          # 检查是否还在 onDestroy 里引用未定义的 args
+          echo "==== 检查 MainActivity.kt 逻辑 ===="
           if grep -q "unbindUserService(args" app/src/main/kotlin/com/atomic/map/MainActivity.kt; then
-             if ! grep -q "val args =" app/src/main/kotlin/com/atomic/map/MainActivity.kt; then
-                echo "致命错误：MainActivity 引用了未定义的变量 args！"
-                exit 1
-             fi
+            if ! grep -q "val args =" app/src/main/kotlin/com/atomic/map/MainActivity.kt; then
+               echo "错误代码片段展示："
+               grep -C 5 "unbindUserService" app/src/main/kotlin/com/atomic/map/MainActivity.kt
+               exit 1
+            fi
           fi
