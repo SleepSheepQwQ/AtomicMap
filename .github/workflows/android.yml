@@ -5,33 +5,29 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 只有哨兵任务过了，先锋才冲锋
+    needs: [diagnostic] 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 初始化 JDK 17
+      - uses: actions/checkout@v4
+      
+      - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 战前自愈 (Repair gradlew)
-        # 这一步直接解决 sh 无法运行 .jar 的问题，强制使用系统环境
+      - name: 物理重塑 gradlew
         run: |
           echo '#!/bin/sh' > gradlew
           echo 'exec gradle "$@"' >> gradlew
           chmod +x gradlew
 
-      - name: 官方 Gradle 托管
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: 8.2
-
       - name: 执行生产编译
-        run: ./gradlew assembleDebug --console=plain --stacktrace
+        # 使用 --no-daemon 确保云端环境稳定
+        run: ./gradlew assembleDebug --console=plain --no-daemon
 
-      - name: 上传产物
+      - name: 产出 APK
         uses: actions/upload-artifact@v4
         with:
-          name: AtomicMap-Release-APK
+          name: AtomicMap-Official-Debug
           path: app/build/outputs/apk/debug/*.apk
