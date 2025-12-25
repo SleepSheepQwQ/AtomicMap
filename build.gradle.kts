@@ -1,8 +1,16 @@
-buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.2.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20")
+plugins {
+    id("com.android.application") version "8.2.0" apply false
+    id("com.android.library") version "8.2.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
-// 仓库已在 settings.gradle.kts 中统一管理，此处无需重复 allprojects
+tasks.register<Delete>("clean") {
+    delete(rootProject.buildDir)
+}

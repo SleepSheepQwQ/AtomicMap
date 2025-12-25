@@ -6,8 +6,8 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    // 强制所有模块使用这里的仓库定义
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // 允许项目内部自定义仓库，增加兼容性
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()

@@ -1,8 +1,0 @@
-// 2025 现代架构：仓库已在 settings.gradle.kts 中全局定义
-// 这里禁止出现 allprojects { repositories { ... } }
-buildscript {
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.2.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20")
-    }
-}

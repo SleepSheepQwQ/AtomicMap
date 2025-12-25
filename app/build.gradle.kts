@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.atomic.map"
     compileSdk = 34
+
     defaultConfig {
         applicationId = "com.atomic.map"
         minSdk = 26
@@ -13,15 +14,18 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
-    buildFeatures { 
+
+    buildFeatures {
         compose = true
-        aidl = true 
+        aidl = true
     }
-    composeOptions { 
-        kotlinCompilerExtensionVersion = "1.5.4" 
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.4"
     }
-    kotlinOptions { 
-        jvmTarget = "17" 
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 }
 
