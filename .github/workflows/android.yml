@@ -1,33 +1,55 @@
-name: Android Production Pioneer
+name: Atomic Continuous Production
 
 on: [push, workflow_dispatch]
 
 jobs:
-  build:
+  build-pipeline:
     runs-on: ubuntu-latest
-    # 只有哨兵任务过了，先锋才冲锋
-    needs: [diagnostic] 
     steps:
       - uses: actions/checkout@v4
-      
-      - name: set up JDK 17
+
+      - name: 1. 仓库补给审计
+        run: |
+          echo "==== 正在审计 settings.gradle.kts ===="
+          cat settings.gradle.kts
+          if grep -q "google()" settings.gradle.kts; then
+            echo "✅ 补给线确认：Google 仓库已就绪。"
+          else
+            echo "❌ 审计失败：settings.gradle.kts 依然没有定义仓库！"
+            exit 1
+          fi
+
+      - name: 2. MainActivity 逻辑审计
+        run: |
+          echo "==== 正在审计 MainActivity.kt ===="
+          if grep -q "unbindUserService(args" app/src/main/kotlin/com/atomic/map/MainActivity.kt; then
+            if ! grep -q "val args =" app/src/main/kotlin/com/atomic/map/MainActivity.kt; then
+               echo "❌ 语法炸弹：检测到未定义的 args 变量！"
+               grep -C 3 "unbindUserService" app/src/main/kotlin/com/atomic/map/MainActivity.kt
+               exit 1
+            fi
+          fi
+          echo "✅ 逻辑确认：语法闭环。"
+
+      - name: 3. 环境自愈
+        run: |
+          echo "==== 正在修复 Gradle 执行权 ===="
+          echo '#!/bin/sh' > gradlew
+          echo 'exec gradle "$@"' >> gradlew
+          chmod +x gradlew
+
+      - name: 4. 初始化 JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 物理重塑 gradlew
-        run: |
-          echo '#!/bin/sh' > gradlew
-          echo 'exec gradle "$@"' >> gradlew
-          chmod +x gradlew
+      - name: 5. 最终编译 (Assemble APK)
+        # 既然审计过了，直接开火
+        run: ./gradlew assembleDebug --console=plain --stacktrace
 
-      - name: 执行生产编译
-        # 使用 --no-daemon 确保云端环境稳定
-        run: ./gradlew assembleDebug --console=plain --no-daemon
-
-      - name: 产出 APK
+      - name: 6. 产物收割
         uses: actions/upload-artifact@v4
         with:
-          name: AtomicMap-Official-Debug
+          name: AtomicMap-Final-Build
           path: app/build/outputs/apk/debug/*.apk
